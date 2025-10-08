@@ -1,0 +1,23 @@
+# Ignore Git files and node_modules for both frontend/backend
+.git
+.gitignore
+
+# Ignore environment files
+.env
+backend/.env
+frontend/.env
+
+# Ignore dependencies that will be installed in container
+backend/vendor
+frontend/node_modules
+
+# Ignore Vue build output (since we build in container)
+frontend/dist
+
+# Ignore Laravel storage cache and logs (optional)
+backend/storage/*.key
+backend/bootstrap/cache/*.php
+
+# Ignore logs and temp files
+npm-debug.log
+yarn-error.log
