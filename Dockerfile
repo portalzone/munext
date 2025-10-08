@@ -5,29 +5,73 @@ WORKDIR /frontend
 COPY frontend/package*.json ./
 RUN npm install
 COPY frontend/ .
-
-RUN CI=false npm run build
+RUN npm run build
 
 
 # Stage 2: Build PHP backend
 FROM php:8.2-cli
 
+# Install system dependencies including MySQL client
 RUN apt-get update && apt-get install -y \
-    git curl libpng-dev libonig-dev libxml2-dev zip unzip \
-    && docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd
+    git \
+    curl \
+    libpng-dev \
+    libonig-dev \
+    libxml2-dev \
+    zip \
+    unzip \
+    default-mysql-client \
+    && docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
+# Get Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
+# Set working directory
 WORKDIR /app
 
+# Copy backend files
 COPY backend/ ./
 
+# Install dependencies
 RUN composer install --no-dev --optimize-autoloader --no-interaction
 
+# Copy built frontend
 COPY --from=frontend-builder /frontend/dist ./public
 
-RUN php artisan config:cache && php artisan route:cache && php artisan view:cache
+# Set proper permissions
+RUN chmod -R 775 storage bootstrap/cache
 
+# Create startup script
+RUN echo '#!/bin/bash\n\
+set -e\n\
+echo "==> Clearing caches..."\n\
+php artisan config:clear\n\
+php artisan cache:clear\n\
+php artisan route:clear\n\
+php artisan view:clear\n\
+\n\
+echo "==> Waiting for database connection..."\n\
+sleep 10\n\
+\n\
+echo "==> Running database migrations..."\n\
+php artisan migrate --force\n\
+\n\
+echo "==> Seeding admin user..."\n\
+php artisan db:seed --class=AdminSeeder --force || echo "Admin user already exists"\n\
+\n\
+echo "==> Optimizing application..."\n\
+php artisan config:cache\n\
+php artisan route:cache\n\
+php artisan view:cache\n\
+\n\
+echo "==> Starting server on port ${PORT:-8080}..."\n\
+php artisan serve --host=0.0.0.0 --port=${PORT:-8080}\n\
+' > /start.sh && chmod +x /start.sh
+
+# Expose port
 EXPOSE 8080
 
-CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8080"]
+# Use the startup script
+CMD ["/start.sh"]
