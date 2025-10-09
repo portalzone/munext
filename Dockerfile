@@ -45,17 +45,17 @@ RUN chmod -R 775 storage bootstrap/cache
 # Startup script (as you have written)
 RUN echo '#!/bin/bash\n\
 set -e\n\
-echo "==> Clearing caches..."\n\
-php artisan config:clear\n\
-php artisan cache:clear\n\
-php artisan route:clear\n\
-php artisan view:clear\n\
-\n\
 echo "==> Waiting for database connection..."\n\
 sleep 10\n\
 \n\
 echo "==> Running database migrations..."\n\
 php artisan migrate --force\n\
+\n\
+echo "==> Clearing caches..."\n\
+php artisan config:clear\n\
+php artisan cache:clear\n\
+php artisan route:clear\n\
+php artisan view:clear\n\
 \n\
 echo "==> Seeding admin user..."\n\
 php artisan db:seed --class=AdminSeeder --force || echo "Admin user already exists"\n\
@@ -68,6 +68,7 @@ php artisan view:cache\n\
 echo "==> Starting server on port ${PORT:-8080}..."\n\
 php artisan serve --host=0.0.0.0 --port=${PORT:-8080}\n\
 ' > /start.sh && chmod +x /start.sh
+
 
 EXPOSE 8080
 
