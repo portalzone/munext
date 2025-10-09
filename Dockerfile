@@ -7,7 +7,6 @@ RUN npm install
 COPY frontend/ .
 RUN npm run build
 
-
 # Stage 2: Build PHP backend
 FROM php:8.2-cli
 
@@ -43,7 +42,7 @@ COPY --from=frontend-builder /frontend/dist ./public
 # Set proper permissions
 RUN chmod -R 775 storage bootstrap/cache
 
-# Create startup script
+# Startup script (as you have written)
 RUN echo '#!/bin/bash\n\
 set -e\n\
 echo "==> Clearing caches..."\n\
@@ -70,8 +69,6 @@ echo "==> Starting server on port ${PORT:-8080}..."\n\
 php artisan serve --host=0.0.0.0 --port=${PORT:-8080}\n\
 ' > /start.sh && chmod +x /start.sh
 
-# Expose port
 EXPOSE 8080
 
-# Use the startup script
 CMD ["/start.sh"]
